@@ -1,0 +1,40 @@
+plugins {
+    id 'java'
+    id 'war'
+}
+
+group 'com.exalt.managment'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    junitVersion = '5.8.2'
+}
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+dependencies {
+    implementation 'org.mapstruct:mapstruct:1.5.2.Final'
+    annotationProcessor('org.mapstruct:mapstruct-processor:1.5.2.Final')
+    implementation 'com.aerospike:java-object-mapper:2.1.0'
+    implementation 'org.jetbrains:annotations:20.1.0'
+    compileOnly('jakarta.platform:jakarta.jakartaee-api:9.1.0')
+    implementation 'ch.qos.logback:logback-core:1.2.3'
+    implementation 'ch.qos.logback:logback-classic:1.2.3'
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.23.0'
+    testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: '2.23.0'
+    testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+}
+
+test {
+    useJUnitPlatform()
+}
