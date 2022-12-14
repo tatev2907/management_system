@@ -4,11 +4,12 @@ package com.exalt.managment.managementsystem.model.dao;
 import com.exalt.managment.managementsystem.service.Status;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,11 +30,6 @@ public class ServerDAO {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ServerDAO.class);
   private final long id;
-  /**
-   * A list of latches representing all clients waiting for the server to be active
-   */
-  List<CountDownLatch> waitingLatches =
-      Collections.synchronizedList(new ArrayList<>());
   private float capacity;
   private int users;
   private Status status;
@@ -70,28 +66,13 @@ public class ServerDAO {
   }
 
   private void startServer() {
-    LOGGER.info("Initializing server {} in NewlyCreated status", this.id);
-    ScheduledExecutorService scheduler
-        = Executors.newSingleThreadScheduledExecutor();
-    scheduler.scheduleWithFixedDelay(() -> {
-      setStatus(Status.ACTIVE);
-      LOGGER.info("Server created and in ACTIVE status");
-      notifyAllWaitingLatches();
-    },SERVER_STARTUP_DELAY, SERVER_STARTUP_DELAY,TimeUnit.MILLISECONDS);
-  }
-
-  private void notifyAllWaitingLatches() {
-    waitingLatches.forEach(CountDownLatch::countDown);
-    waitingLatches.clear();
-  }
-
-  /**
-   * Add new latch to latches list.
-   *
-   * @param latch the latch
-   */
-  public void addWaitingLatch(CountDownLatch latch) {
-    waitingLatches.add(latch);
+    try {
+      Thread.sleep(SERVER_STARTUP_DELAY);
+      status = Status.ACTIVE;
+      LOGGER.info("Server " + id + " is now active.");
+    } catch (InterruptedException e) {
+      LOGGER.error("Server startup interrupted: " + e.getMessage());
+    }
   }
 
   /**

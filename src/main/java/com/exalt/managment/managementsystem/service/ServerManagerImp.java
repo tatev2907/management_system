@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +38,7 @@ public class ServerManagerImp implements ServerManager {
   public ServerDAO allocateServer(float requestedMemory)
       throws RefusedRequestException, InterruptedException {
     LOGGER.info("Requested {}GB of memory", requestedMemory);
-    if (requestedMemory > ServerDAO.SERVER_SIZE || requestedMemory < 1) {
+    if (requestedMemory > ServerDAO.SERVER_SIZE) {
       LOGGER.warn("Maximum server size is {}GB can't allocate {}GB.", ServerDAO.SERVER_SIZE,
           requestedMemory);
       throw new RefusedRequestException(
@@ -72,19 +72,22 @@ public class ServerManagerImp implements ServerManager {
   }
 
   private ServerDAO createNewServer() {
-    ServerDAO newServer = new ServerDAO(servers.size()+1);
+    ServerDAO newServer = new ServerDAO(servers.size() + 1);
     servers.add(newServer);
     return newServer;
   }
 
   private void waitUntilServerActivate(@NotNull ServerDAO allocatedServer)
       throws InterruptedException {
-    if (!allocatedServer.isActive()) {
-      CountDownLatch latch = new CountDownLatch(1);
-      allocatedServer.addWaitingLatch(latch);
-      latch.await();
-      LOGGER.info("Server {} is active", allocatedServer.getId());
+    Semaphore semaphore = new Semaphore(0);
+    while (!allocatedServer.isActive()) {
+      try {
+        Thread.sleep(60000);
+      } catch (InterruptedException e) {
+        LOGGER.error("Waiting for server interrupted: " + e.getMessage());
+      }
     }
+    semaphore.release();
   }
 
   public List<ServerDAO> getServers() throws ServerNotFoundException {
